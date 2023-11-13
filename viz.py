@@ -7,23 +7,52 @@ from swmm.toolkit.shared_enum import SubcatchAttribute, NodeAttribute, LinkAttri
 from pyswmm import Output
 import numpy as np
 from swmm_api.input_file import read_inp_file, SwmmInput, section_labels as sections
-
-
+from swmm_api import swmm5_run, read_out_file
+from tempfile import NamedTemporaryFile
+import pathlib
+import tempfile
+import os
 # set streamlit page title
 st.title('SWMM Visualization')
 st.text('')
 
 # upload file
 st.sidebar.title('Navigation')
-uploaded_file = st.sidebar.file_uploader("Choose a swmm input file (.inp)")
+uploaded_file = st.sidebar.file_uploader("Choose a swmm input file (.inp)", type = ['inp'])
 
 # read swmm file
 if uploaded_file is not None:
-    inp = SwmmInput.read_file(uploaded_file)
+    #st.write(type(uploaded_file))
+    file_details = {"FileName":uploaded_file.name,"FileType":uploaded_file.type}
+    #st.write(file_details)
+    
+    with open(os.path.join("tempDir",'temp.inp'),'wb') as f:
+        f.write(uploaded_file.getbuffer())
+    st.success('Uploaded file successfully')
+    
+    
+    temp_file = "tempDir/temp.inp"
+    inp = SwmmInput.read_file(temp_file)
+    #inp = SwmmInput.read_file(uploaded_file)
+    #inp.write_file('temp.inp')
+    #inp = SwmmInput.read_file('temp.inp')
+    #st.write(file_read)
+    #inp = SwmmInput.read_file(file_read)
+
+    #print(inp)
 else:
-    inp = SwmmInput.read_file("D:/pyswmm_viz/pyswmm_viz/inp/Example1.inp")
-    
-    
+    uploaded_file = "inp/Example1.inp"
+    inp = SwmmInput.read_file(uploaded_file)
+  
+
+#run  swmm model using pyswmm  
+#swmm5_run('new_inputfile.inp', progress_size=100)    
+
+## Read the OUT-File
+#out = read_out_file('new_inputfile.out')   # type: swmm_api.SwmmOut
+#df = out.to_frame()  # type: pandas.DataFrame
+
+
 # layout
 options = st.sidebar.radio('Pages',
                            options = ['Home',
