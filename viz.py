@@ -280,31 +280,34 @@ def threeD_view(inp):
     conduits.set_index('from_node', inplace=True)
     
     # Merging the 'x' and 'y' columns from the first DataFrame into the second DataFrame based on the index
-    conduits = conduits.join(all_nodes[['x', 'y']])
+    conduits = conduits.join(all_nodes[['x', 'y', 'elevation']])
     #rename xy columns 
-    conduits.rename(columns={'x': 'from_x', 'y': 'from_y'}, inplace=True)
+    conduits.rename(columns={'x': 'from_x', 'y': 'from_y','elevation':'from_z'}, inplace=True)
     conduits.set_index('to_node', inplace=True)
-    conduits = conduits.join(all_nodes[['x', 'y']])
-    conduits.rename(columns={'x': 'to_x', 'y': 'to_y'}, inplace=True)
+    conduits = conduits.join(all_nodes[['x', 'y', 'elevation']])
+    conduits.rename(columns={'x': 'to_x', 'y': 'to_y','elevation':'to_z'}, inplace=True)
     
 
-    # st.dataframe(junctions_coord) 
+    st.dataframe(junctions_coord) 
+    subs_coord = subs_coord.join(all_nodes[['elevation']], on='outlet')
+    st.dataframe(conduits) 
     # st.dataframe(all_nodes)
     #add dropdown menu for selecting dataframe
-    st.dataframe(conduits)
+    #st.dataframe(conduits)
     
     # Create scatter plot using go.Scatter
     fig = go.Figure()
 
     # Add scatter trace
     fig.add_trace(
-        go.Scatter(
+        go.Scatter3d(
             x=junctions_coord['x'],
             y=junctions_coord['y'],
+            z=junctions_coord['elevation'],
             mode='markers+text',
             text=junctions_coord.index,
             textposition='top center',
-            marker=dict(size=12, opacity=0.8),
+            marker=dict(size=4, opacity=0.8),
             
         )
     )
@@ -313,44 +316,49 @@ def threeD_view(inp):
     num = 0
     for polygon in subs_coord['polygon']:
         x,y = zip(*polygon)
-        fig.add_trace(go.Scatter(
+        fig.add_trace(go.Scatter3d(
                         x=list(x) + [x[0]],  # Close the polygon by repeating the first point
                         y=list(y) + [y[0]],
-                        fill="toself",
-                        fillcolor='rgba(92,96,232,0.2)',
-                        line_color='rgba(92,96,232,0.2)',
+                        z=[subs_coord['elevation'][num]]*(len(x)+1),
+                        mode='lines',
+                        showlegend=False,
+                        line_color='grey',
                     )
                     )
         
-        fig.add_trace(go.Scatter(x = [sum(x)/len(x)],
+        fig.add_trace(go.Scatter3d(x = [sum(x)/len(x)],
                                  y = [sum(y)/len(y)],
+                                 z=[subs_coord['elevation'][num]],
                                  mode = 'text',
+                                 showlegend=False,
                                  text = 'Sub ' + subs_coord.index[num],
                                  textfont = dict(color='black', size=12),))
         num = num + 1                        
         
     # # add symbol trace for raingages
-    fig.add_trace(
-        go.Scatter(
-            x=raingages_coord['x'],
-            y=raingages_coord['y'],
-            mode='markers+text',
-            text=raingages_coord.index,
-            textposition='top center',
-            marker=dict(size=12, opacity=0.8),
+    # fig.add_trace(
+    #     go.Scatter3d(
+    #         x=raingages_coord['x'],
+    #         y=raingages_coord['y'],
+    #         z=raingages_coord['elevation'],
+    #         mode='markers+text',
+    #         text=raingages_coord.index,
+    #         textposition='top center',
+    #         marker=dict(size=3, opacity=0.8),
             
-        )
-    )
+    #     )
+    # )
     
      # add symbol trace for outfalls
     fig.add_trace(
-        go.Scatter(
+        go.Scatter3d(
             x=outfalls_coord['x'],
             y=outfalls_coord['y'],
+            z=outfalls_coord['elevation'],
             mode='markers+text',
             text=outfalls_coord.index,
             textposition='top center',
-            marker=dict(size=12, opacity=0.8),  
+            marker=dict(size=4, opacity=0.8),  
         )
     )   
     
@@ -358,39 +366,44 @@ def threeD_view(inp):
     # add trace for conduits
     for conduit in conduits.itertuples():
 
-        fig.add_trace(go.Scatter(x = [conduit[8], conduit[10]],
-                                 y = [conduit[9], conduit[11]],
+        fig.add_trace(go.Scatter3d(x = [conduit[8], conduit[11]],
+                                 y = [conduit[9], conduit[12]],
+                                 z = [conduit[10], conduit[13]],
                                  mode = 'lines',
                                  line = dict(width = 3, color = 'crimson'),
+                                 showlegend=False,
                                  )
                       )
-        fig.add_trace(go.Scatter(x = [(conduit[8]+conduit[10])/2],
-                                 y = [(conduit[9]+conduit[11])/2],
+        fig.add_trace(go.Scatter3d(x = [(conduit[8]+conduit[11])/2],
+                                 y = [(conduit[9]+conduit[12])/2],
+                                 z = [(conduit[10]+conduit[13])/2],
                                  mode = 'text',
-                                 showlegend=True,
+                                 showlegend=False,
                                  text = 'Conduit '+ conduit[7],
                                  textfont = dict(color='black', size=12),))
    
     
     # Set the x and y axes to have the same range
-    x_min = junctions_coord['x'].min()
-    x_max = junctions_coord['x'].max()
-    y_min = junctions_coord['y'].min()
-    y_max = junctions_coord['y'].max()
+    # x_min = junctions_coord['x'].min()
+    # x_max = junctions_coord['x'].max()
+    # y_min = junctions_coord['y'].min()
+    # y_max = junctions_coord['y'].max()
+    # z_min = junctions_coord['z'].min()
+    # z_max = junctions_coord['z'].max()
     
-    fig.update_layout(
-        xaxis=dict(scaleratio=1, showgrid=False),
-        yaxis=dict(scaleratio=1, showgrid=False)
-    )
-    #fig.update_layout(yaxis_scaleanchor="x")
-    fig.update_layout(showlegend=False,
-                    autosize=False,
-                    width=800,
-                    height=800,)
-    # Customize layout
-    fig.update_xaxes(title_text='X-axis')
-    fig.update_yaxes(title_text='Y-axis')
-    fig.update_layout(title='Node Plot')
+    # fig.update_layout(
+    #     xaxis=dict(scaleratio=1, showgrid=False),
+    #     yaxis=dict(scaleratio=1, showgrid=False)
+    # )
+    # #fig.update_layout(yaxis_scaleanchor="x")
+    # fig.update_layout(showlegend=False,
+    #                 autosize=False,
+    #                 width=800,
+    #                 height=800,)
+    # # Customize layout
+    # fig.update_xaxes(title_text='X-axis')
+    # fig.update_yaxes(title_text='Y-axis')
+    # fig.update_layout(title='Node Plot')
     
     
     # Display the Plotly figure in Streamlit
