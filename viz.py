@@ -26,12 +26,12 @@ if uploaded_file is not None:
     file_details = {"FileName":uploaded_file.name,"FileType":uploaded_file.type}
     #st.write(file_details)
     
-    with open(os.path.join("tempDir",'temp.inp'),'wb') as f:
+    with open(os.path.join("pyswmm_viz/tempDir",'temp.inp'),'wb') as f:
         f.write(uploaded_file.getbuffer())
     st.success('Uploaded file successfully')
     
     
-    temp_file = "tempDir/temp.inp"
+    temp_file = "pyswmm_viz/tempDir/temp.inp"
     inp = SwmmInput.read_file(temp_file)
     #inp = SwmmInput.read_file(uploaded_file)
     #inp.write_file('temp.inp')
