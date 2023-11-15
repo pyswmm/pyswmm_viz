@@ -1,16 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-import plotly.express as px
 #from pyswmm import Simulation, Nodes, Links
 #from swmm.toolkit.shared_enum import SubcatchAttribute, NodeAttribute, LinkAttribute
 #from pyswmm import Output
 import numpy as np
 from swmm_api.input_file import read_inp_file, SwmmInput, section_labels as sections
-from swmm_api import swmm5_run, read_out_file
-from tempfile import NamedTemporaryFile
-import pathlib
-import tempfile
+from swmm_api.output_file import VARIABLES, OBJECTS
+from swmm_api import swmm5_run, read_out_file,SwmmOutput
 import os
 # set streamlit page title
 st.title('SWMM Visualization')
@@ -41,7 +38,7 @@ if uploaded_file is not None:
 
     #print(inp)
 else:
-    uploaded_file = "pyswmm_viz/inp/Example1.inp"
+    uploaded_file = "inp/Example1.inp"
     inp = SwmmInput.read_file(uploaded_file)
   
 
@@ -288,9 +285,9 @@ def threeD_view(inp):
     conduits.rename(columns={'x': 'to_x', 'y': 'to_y','elevation':'to_z'}, inplace=True)
     
 
-    st.dataframe(junctions_coord) 
+    #st.dataframe(junctions_coord) 
     subs_coord = subs_coord.join(all_nodes[['elevation']], on='outlet')
-    st.dataframe(conduits) 
+    #st.dataframe(conduits) 
     # st.dataframe(all_nodes)
     #add dropdown menu for selecting dataframe
     #st.dataframe(conduits)
@@ -391,19 +388,20 @@ def threeD_view(inp):
     # z_min = junctions_coord['z'].min()
     # z_max = junctions_coord['z'].max()
     
-    # fig.update_layout(
-    #     xaxis=dict(scaleratio=1, showgrid=False),
-    #     yaxis=dict(scaleratio=1, showgrid=False)
-    # )
-    # #fig.update_layout(yaxis_scaleanchor="x")
-    # fig.update_layout(showlegend=False,
-    #                 autosize=False,
-    #                 width=800,
-    #                 height=800,)
+    fig.update_layout(
+        xaxis=dict(scaleratio=1, showgrid=False),
+        yaxis=dict(scaleratio=1, showgrid=False),
+    )
+    #fig.update_layout(yaxis_scaleanchor="x")
+    fig.update_layout(showlegend=False,
+                    autosize=False,
+                    width=800,
+                    height=800,)
     # # Customize layout
-    # fig.update_xaxes(title_text='X-axis')
-    # fig.update_yaxes(title_text='Y-axis')
-    # fig.update_layout(title='Node Plot')
+    fig.update_xaxes(title_text='X-axis')
+    fig.update_yaxes(title_text='Y-axis')
+    
+    fig.update_layout(title='Node Plot')
     
     
     # Display the Plotly figure in Streamlit
@@ -411,6 +409,59 @@ def threeD_view(inp):
     
     return None
 
+
+def simulation_results(inp):
+    from pyswmm import Simulation, Nodes, Links
+    #import time
+    
+    with Simulation(r'inp/Example1.inp') as sim:
+        #show progress bar
+        progress_text = "Operation in progress. Please wait."
+        my_bar = st.progress(0, text=progress_text)
+        for ind, step in enumerate(sim):  
+            my_bar.progress(round(sim.percent_complete*100), text=progress_text)
+        #time.sleep(1)
+        my_bar.empty()
+
+    st.write("Simulation Done!")
+
+    
+    #read the output file   
+    out = read_out_file('inp/Example1.out')   
+    df = out.to_frame() 
+    #st.dataframe(df)
+    
+    
+    #st.write(out.variables)
+    #st.write(out.labels)
+    #st.write(out.flow_unit)
+    #st.write(out.n_periods)
+    #st.write(out.model_properties)
+    #create a dropdown button to show certain column of df based on the column name
+    #type_dropdown: subcatchment, node, link
+    type_dropdown = st.selectbox("Select a type:", ['subcatchment', 'node', 'link'])
+    st.write("You selected:", type_dropdown)
+    #id selections
+    #show all ids in the selected column
+    variable_selections = out.variables[type_dropdown]
+    id_selections = out.labels[type_dropdown]
+    
+    #create a dropdown button for id_selections
+    id_dropdown = st.selectbox("Select an id:", id_selections)
+    st.write("You selected:", id_dropdown)
+    variable_dropdown = st.selectbox("Select a variable:", variable_selections)
+    st.write("You selected:", variable_dropdown)
+
+    
+    #create a sub dataframe for the selected variable
+    sub_out = out.get_part(OBJECTS.NODE, 'J1', VARIABLES.NODE.HEAD)
+    #sub_out = out.get_part(type_dropdown, 'J1', variable_dropdown)
+    st.dataframe(sub_out)
+    #
+    
+    
+    
+    return None
 
 if options == 'Home':
     st.header('Home')
@@ -421,3 +472,5 @@ elif options == '2D view':
     twoD_view(inp)
 elif options == '3D view':
     threeD_view(inp)
+elif options == 'Simulation results':
+    simulation_results(inp)
