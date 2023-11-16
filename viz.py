@@ -409,8 +409,7 @@ def threeD_view(inp):
     
     return None
 
-
-def simulation_results(inp):
+def run_model(inp):
     from pyswmm import Simulation, Nodes, Links
     #import time
     
@@ -429,6 +428,12 @@ def simulation_results(inp):
     #read the output file   
     out = read_out_file('inp/Example1.out')   
     df = out.to_frame() 
+    
+    return out,df
+
+
+def simulation_results(out, df):
+
     #st.dataframe(df)
     
     
@@ -454,12 +459,11 @@ def simulation_results(inp):
 
     
     #create a sub dataframe for the selected variable
-    sub_out = out.get_part(OBJECTS.NODE, 'J1', VARIABLES.NODE.HEAD)
-    #sub_out = out.get_part(type_dropdown, 'J1', variable_dropdown)
+    sub_out = out.get_part(type_dropdown,id_dropdown,variable_dropdown)
+
     st.dataframe(sub_out)
     #
-    
-    
+    #Create a time serie plot
     
     return None
 
@@ -472,5 +476,13 @@ elif options == '2D view':
     twoD_view(inp)
 elif options == '3D view':
     threeD_view(inp)
+    
+elif options == 'Run the model':
+    
+    out,df = run_model(inp)
+    
 elif options == 'Simulation results':
-    simulation_results(inp)
+    
+
+    out,df = run_model(inp)
+    simulation_results(out, df)
