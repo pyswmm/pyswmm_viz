@@ -450,33 +450,56 @@ def run_model(inp):
 def simulation_results(out, df):
 
     #st.dataframe(df)
-    
-    
-    #st.write(out.variables)
-    #st.write(out.labels)
-    #st.write(out.flow_unit)
-    #st.write(out.n_periods)
-    #st.write(out.model_properties)
-    #create a dropdown button to show certain column of df based on the column name
+    col1, col2, col3 = st.columns(3)
+    #create a dropdown button in col1 for selecting a variable
+    with col1:
     #type_dropdown: subcatchment, node, link
-    type_dropdown = st.selectbox("Select a type:", ['subcatchment', 'node', 'link'])
-    st.write("You selected:", type_dropdown)
+        type_dropdown = st.selectbox("Select a type:", ['subcatchment', 'node', 'link'])
+        #st.write("You selected:", type_dropdown)
     #id selections
     #show all ids in the selected column
     variable_selections = out.variables[type_dropdown]
+    #add all option to the variable_selections
+    variable_selections = ['all variables'] + variable_selections
     id_selections = out.labels[type_dropdown]
     
-    #create a dropdown button for id_selections
-    id_dropdown = st.selectbox("Select an id:", id_selections)
-    st.write("You selected:", id_dropdown)
-    variable_dropdown = st.selectbox("Select a variable:", variable_selections)
-    st.write("You selected:", variable_dropdown)
+    with col2:
+        #create a dropdown button for id_selections
+        id_dropdown = st.selectbox("Select an id:", id_selections)
+        #st.write("You selected:", id_dropdown)
+    with col3:
+        variable_dropdown = st.selectbox("Select a variable:", variable_selections)
+        #st.write("You selected:", variable_dropdown)
 
     
     #create a sub dataframe for the selected variable
-    sub_out = out.get_part(type_dropdown,id_dropdown,variable_dropdown)
+    if variable_dropdown == 'all variables':
+        sub_out = out.get_part(type_dropdown,id_dropdown)
+        st.dataframe(sub_out)
+    else:
+        sub_out = out.get_part(type_dropdown,id_dropdown,variable_dropdown)
+        
+        col1,col2 = st.columns(2)
+        with col1:
+            st.dataframe(sub_out)
+        with col2:
+        #plot the dataserie: sub_out
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=sub_out.index,
+                                    y=sub_out,
+                                    mode='lines',
+                                    line = dict(width = 3, color = 'lightblue'),
+                                    showlegend=False,
+                                    )
+                        )
+            #set figure layout width and height
+            fig.update_layout(
+                autosize=False,
+                width=500,
+                height=400,)
+            st.plotly_chart(fig)
 
-    st.dataframe(sub_out)
+    
     #
     #Create a time serie plot
     
