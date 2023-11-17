@@ -9,6 +9,13 @@ from swmm_api.input_file import read_inp_file, SwmmInput, section_labels as sect
 from swmm_api.output_file import VARIABLES, OBJECTS
 from swmm_api import swmm5_run, read_out_file,SwmmOutput
 import os
+
+#define global variables
+#defining global variable out, default value is None
+out = None
+out_df = None
+
+
 # set streamlit page title
 st.title('SWMM Visualization')
 st.text('')
@@ -56,6 +63,7 @@ options = st.sidebar.radio('Pages',
                                       'Stats',
                                       '2D view',
                                       '3D view',
+                                      'Run the model',
                                       'Simulation results',
                                       'Path view',
                                       'Water flux view'])
@@ -118,6 +126,8 @@ def twoD_view(inp):
     conduits['conduit_id']=conduits.index
 
     all_nodes.set_index('node_id', inplace=True)
+    
+    #set from_node as index for conduits and keep the original index  
     conduits.set_index('from_node', inplace=True)
     
     # Merging the 'x' and 'y' columns from the first DataFrame into the second DataFrame based on the index
@@ -128,6 +138,8 @@ def twoD_view(inp):
     conduits = conduits.join(all_nodes[['x', 'y']])
     conduits.rename(columns={'x': 'to_x', 'y': 'to_y'}, inplace=True)
     
+    #set conduit id as index
+    #conduits.set_index('conduit_id', inplace=True)
 
     # st.dataframe(junctions_coord) 
     # st.dataframe(all_nodes)
@@ -471,18 +483,57 @@ if options == 'Home':
     st.header('Home')
     st.text('This is a web app for visualizing SWMM models.')
 elif options == 'Stats':
-    stats(inp)
+    try:
+        stats(inp)
+    except Exception as error:
+        st.write('Failed to load the file.')
+        st.write("An error occurred:", error)
+        #write the error message
+        
+        st.write()
 elif options == '2D view':
-    twoD_view(inp)
+    try:
+        twoD_view(inp)
+    except Exception as error:
+        st.write('Failed to load the file.')
+        st.write("An error occurred:", error)
 elif options == '3D view':
-    threeD_view(inp)
-    
+    try:
+        threeD_view(inp)
+    except Exception as error:
+        st.write('Failed to load the file.')
+        st.write("An error occurred:", error)    
 elif options == 'Run the model':
-    
-    out,df = run_model(inp)
+    #add a run button to start the function
+    if 'clicked' not in st.session_state:
+        st.session_state.clicked = False
+
+    def click_button():
+        st.session_state.clicked = True
+
+    st.button('Run the model', on_click=click_button)
+
+    if st.session_state.clicked:
+        try:
+            out, out_df = run_model(inp)
+            st.dataframe(out_df)
+        except Exception as error:
+            st.write('Failed to load the file.')
+            st.write("An error occurred:", error)
+        
+        st.session_state.clicked = False
+
     
 elif options == 'Simulation results':
-    
+    st.write(out_df)
+    #st.dataframe(out_df)
 
-    out,df = run_model(inp)
-    simulation_results(out, df)
+    #out,df = run_model(inp)
+    try:
+        if out is None or out_df is None:
+            st.write('Please run the model first.')
+        else:
+            simulation_results(out, out_df)
+    except Exception as error:
+        st.write('Failed to load the file.')
+        st.write("An error occurred:", error)
