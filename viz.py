@@ -10,10 +10,13 @@ from swmm_api.output_file import VARIABLES, OBJECTS
 from swmm_api import swmm5_run, read_out_file,SwmmOutput
 import os
 
-#define global variables
-#defining global variable out, default value is None
-out = None
-out_df = None
+
+# Initialization of session state variables
+if 'out' not in st.session_state:
+    st.session_state['out'] = None
+if 'out_df' not in st.session_state:
+    st.session_state['out_df'] = None    
+
 
 
 # set streamlit page title
@@ -505,35 +508,32 @@ elif options == '3D view':
         st.write("An error occurred:", error)    
 elif options == 'Run the model':
     #add a run button to start the function
-    if 'clicked' not in st.session_state:
-        st.session_state.clicked = False
+    if 'run_button' not in st.session_state:
+        st.session_state.run_button = False
 
     def click_button():
-        st.session_state.clicked = True
+        st.session_state.run_button = True
 
     st.button('Run the model', on_click=click_button)
 
-    if st.session_state.clicked:
+    if st.session_state.run_button:
         try:
-            out, out_df = run_model(inp)
-            st.dataframe(out_df)
+            st.session_state.out, st.session_state.out_df = run_model(inp)
+            st.dataframe(st.session_state.out_df)
         except Exception as error:
             st.write('Failed to load the file.')
             st.write("An error occurred:", error)
         
-        st.session_state.clicked = False
+        st.session_state.run_button = False
 
     
 elif options == 'Simulation results':
-    st.write(out_df)
-    #st.dataframe(out_df)
 
-    #out,df = run_model(inp)
     try:
-        if out is None or out_df is None:
+        if st.session_state.out is None or st.session_state.out_df is None:
             st.write('Please run the model first.')
         else:
-            simulation_results(out, out_df)
+            simulation_results(st.session_state.out, st.session_state.out_df)
     except Exception as error:
         st.write('Failed to load the file.')
         st.write("An error occurred:", error)
