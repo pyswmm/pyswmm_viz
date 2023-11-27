@@ -1,14 +1,13 @@
 import streamlit as st
 import pandas as pd
 import plotly.graph_objects as go
-#from pyswmm import Simulation, Nodes, Links
-#from swmm.toolkit.shared_enum import SubcatchAttribute, NodeAttribute, LinkAttribute
-#from pyswmm import Output
+from pyswmm import Simulation, Nodes, Links
 import numpy as np
 from swmm_api.input_file import read_inp_file, SwmmInput, section_labels as sections
 from swmm_api.output_file import VARIABLES, OBJECTS
 from swmm_api import swmm5_run, read_out_file,SwmmOutput
 import os
+import pyvista as pv
 
 
 # Initialization of session state variables
@@ -48,7 +47,7 @@ if uploaded_file is not None:
 
     #print(inp)
 else:
-    uploaded_file = "inp/Example1.inp"
+    uploaded_file = "pyswmm_viz/inp/Example1.inp"
     inp = SwmmInput.read_file(uploaded_file)
   
 
@@ -92,62 +91,149 @@ def stats(inp):
     
     return None
 
+def preprocess(inp):
+    #initialize [junctions_coord, outfalls_coord, dividers_coord, storageUnits_coord] as empty dataframe
+    junctions_coord = []
+    outfalls_coord = []
+    dividers_coord = []
+    storageUnits_coord = []
+    raingages_coord = []
+    subs_coord = []
+    conduits = []
+    
+    coordinates = inp[sections.COORDINATES].frame    #junctions
+    
+    try:
+        raingages = inp[sections.RAINGAGES].frame
+        symbols = inp[sections.SYMBOLS].frame  #raingage
+        # add xy coordinates to raingages
+        raingages_coord = pd.concat([raingages, symbols], axis=1, join="inner")
+        st.session_state['raingages_coord'] = raingages_coord
+        
+    except Exception as error:
+        st.session_state['raingages_coord'] = []
+        st.write('Failed to load the raingages data.')
+ 
+    try:    
+        junctions = inp[sections.JUNCTIONS].frame
+        # add xy coordinates to junctions
+        junctions_coord = pd.concat([junctions, coordinates], axis=1, join="inner")
+        junctions_coord['node_id'] = junctions_coord.index
+        st.session_state['junctions_coord'] = junctions_coord
 
+    except Exception as error:
+        st.session_state['junctions_coord'] = []
+        st.write('Failed to load the junctions data.')
+        
+        
+    try:    
+        subs = inp[sections.SUBCATCHMENTS].frame
+        polygons = inp[sections.POLYGONS].frame  #subcatchment
+        # add xy coordinates to subcatchments
+        subs_coord = pd.concat([subs, polygons], axis=1, join="inner")
+        st.session_state['subs_coord'] = subs_coord
+ 
+    except Exception as error:  
+        st.session_state['subs_coord'] = []
+        st.write('Failed to load the subcatchments data.')
+             
+    try:    
+        outfalls = inp[sections.OUTFALLS].frame
+        # add xy coordinates to outfalls
+        outfalls_coord = pd.concat([outfalls, coordinates], axis=1, join="inner")
+        outfalls_coord['node_id'] = outfalls_coord.index
+        st.session_state['outfalls_coord'] = outfalls_coord
+        
+    except Exception as error:
+        st.session_state['outfalls_coord'] = []
+        st.write('Failed to load the outfalls data.')
+        
+    try:    
+        dividers = inp[sections.DIVIDERS].frame
+        # add xy coordinates to dividers
+        dividers_coord = pd.concat([dividers, coordinates], axis=1, join="inner")
+        dividers_coord['node_id'] = dividers_coord.index
+        st.session_state['dividers_coord'] = dividers_coord
+        
+    except Exception as error:
+        st.session_state['dividers_coord'] = []
+        st.write('Failed to load the dividers data.')
+        
+    try:    
+        storageUnits = inp[sections.STORAGE].frame
+        # add xy coordinates to storageUnits
+        storageUnits_coord = pd.concat([storageUnits, coordinates], axis=1, join="inner")
+        storageUnits_coord['node_id'] = storageUnits_coord.index
+        st.session_state['storageUnits_coord'] = storageUnits_coord
+        
+    except Exception as error:
+        st.session_state['storageUnits_coord'] = []
+        st.write('Failed to load the storageUnits data.')
+        
+    try:
+        conduits = inp[sections.CONDUITS].frame
+        conduits['conduit_id']=conduits.index
+    except Exception as error:  
+        st.write('Failed to load the conduits data.')
+
+    #combine junctions, outfalls, dividers, storageUnits
+    dataframelist =[]
+    for item in [junctions_coord, outfalls_coord, dividers_coord, storageUnits_coord]:
+        #add to list if item is empty list
+        if isinstance(item, list):
+            pass
+        else:
+            dataframelist.append(item)
+    
+    if len(dataframelist) >= 2:
+        all_nodes = pd.concat(dataframelist, ignore_index=True)
+        all_nodes.set_index('node_id', inplace=True)
+        #set none value to 0 for 'depth_max' column
+        all_nodes['depth_max'] = all_nodes['depth_max'].fillna(0)
+        all_nodes['depth_init'] = all_nodes['depth_init'].fillna(0)
+        all_nodes['depth_surcharge'] = all_nodes['depth_surcharge'].fillna(0)
+        all_nodes['area_ponded'] = all_nodes['area_ponded'].fillna(0)
+        #st.dataframe(all_nodes)
+        
+        if isinstance(conduits, list):
+            pass
+        else:
+            #set from_node as index for conduits and keep the original index  
+            conduits.set_index('from_node', inplace=True,drop=False)
+            # Merging the 'x' and 'y' columns from the first DataFrame into the second DataFrame based on the index
+            conduits = conduits.join(all_nodes[['x', 'y', 'elevation']])
+            #rename xy columns 
+            conduits.rename(columns={'x': 'from_x', 'y': 'from_y','elevation':'from_z'}, inplace=True)
+            conduits.set_index('to_node', inplace=True,drop=False)
+            conduits = conduits.join(all_nodes[['x', 'y', 'elevation']])
+            conduits.rename(columns={'x': 'to_x', 'y': 'to_y','elevation':'to_z'}, inplace=True)
+            
+            # #st.dataframe(conduits)
+            st.dataframe(conduits)
+            st.session_state['conduits'] = conduits
+    else:
+        st.write('Failed to combine the nodes data.')
+
+    try:
+        subs_coord = subs_coord.join(all_nodes[['elevation']], on='outlet')##########
+        st.session_state['subs_coord'] = subs_coord
+    except Exception as error:
+        st.write('Failed to load the subcatchments data.')
+        
+    return None
+    
 
 # 2D view page
 def twoD_view(inp):
-    raingages = inp[sections.RAINGAGES].frame
-    junctions = inp[sections.JUNCTIONS].frame
-    subs = inp[sections.SUBCATCHMENTS].frame
-    outfalls = inp[sections.OUTFALLS].frame
-    conduits = inp[sections.CONDUITS].frame
     
-    coordinates = inp[sections.COORDINATES].frame    #junctions
-    polygons = inp[sections.POLYGONS].frame  #subcatchment
-    symbols = inp[sections.SYMBOLS].frame  #raingage
-    
-    #frames = [df1, df2, df3]
-    #result = pd.concat(frames)
-    
-    # add xy coordinates to junctions
-    junctions_coord = pd.concat([junctions, coordinates], axis=1, join="inner")
-
-    # add xy coordinates to subcatchments
-    subs_coord = pd.concat([subs, polygons], axis=1, join="inner")
-
-    # add xy coordinates to raingages
-    raingages_coord = pd.concat([raingages, symbols], axis=1, join="inner")
-    
-    # add xy coordinates to outfalls
-    outfalls_coord = pd.concat([outfalls, coordinates], axis=1, join="inner")
-    
-    
-        # add xy coordinates to conduits
-    junctions_coord['node_id'] = junctions_coord.index
-    outfalls_coord['node_id'] = outfalls_coord.index
-    all_nodes = pd.concat([junctions_coord, outfalls_coord], ignore_index=True)#need to add more nodes like storage, ect.
-    conduits['conduit_id']=conduits.index
-
-    all_nodes.set_index('node_id', inplace=True)
-    
-    #set from_node as index for conduits and keep the original index  
-    conduits.set_index('from_node', inplace=True)
-    
-    # Merging the 'x' and 'y' columns from the first DataFrame into the second DataFrame based on the index
-    conduits = conduits.join(all_nodes[['x', 'y']])
-    #rename xy columns 
-    conduits.rename(columns={'x': 'from_x', 'y': 'from_y'}, inplace=True)
-    conduits.set_index('to_node', inplace=True)
-    conduits = conduits.join(all_nodes[['x', 'y']])
-    conduits.rename(columns={'x': 'to_x', 'y': 'to_y'}, inplace=True)
-    
-    #set conduit id as index
-    #conduits.set_index('conduit_id', inplace=True)
-
-    # st.dataframe(junctions_coord) 
-    # st.dataframe(all_nodes)
-    #add dropdown menu for selecting dataframe
-    st.dataframe(conduits)
+    junctions_coord = st.session_state['junctions_coord']
+    outfalls_coord = st.session_state['outfalls_coord']
+    dividers_coord = st.session_state['dividers_coord']
+    storageUnits_coord = st.session_state['storageUnits_coord']
+    raingages_coord = st.session_state['raingages_coord']
+    subs_coord = st.session_state['subs_coord']
+    conduits = st.session_state['conduits']
+    #st.dataframe(conduits)
     
     # Create scatter plot using go.Scatter
     fig = go.Figure()
@@ -210,21 +296,21 @@ def twoD_view(inp):
         )
     )   
     
-
+    
     # add trace for conduits
     for conduit in conduits.itertuples():
 
-        fig.add_trace(go.Scatter(x = [conduit[8], conduit[10]],
-                                 y = [conduit[9], conduit[11]],
+        fig.add_trace(go.Scatter(x = [conduit[10], conduit[13]],
+                                 y = [conduit[11], conduit[14]],
                                  mode = 'lines',
                                  line = dict(width = 3, color = 'crimson'),
                                  )
                       )
-        fig.add_trace(go.Scatter(x = [(conduit[8]+conduit[10])/2],
-                                 y = [(conduit[9]+conduit[11])/2],
+        fig.add_trace(go.Scatter(x = [(conduit[10]+conduit[13])/2],
+                                 y = [(conduit[11]+conduit[14])/2],
                                  mode = 'text',
                                  showlegend=True,
-                                 text = 'Conduit '+ conduit[7],
+                                 text = 'Conduit '+ conduit[9],
                                  textfont = dict(color='black', size=12),))
    
     
@@ -256,55 +342,14 @@ def twoD_view(inp):
 
 # 3D view page
 def threeD_view(inp):
-    raingages = inp[sections.RAINGAGES].frame
-    junctions = inp[sections.JUNCTIONS].frame
-    subs = inp[sections.SUBCATCHMENTS].frame
-    outfalls = inp[sections.OUTFALLS].frame
-    conduits = inp[sections.CONDUITS].frame
     
-    coordinates = inp[sections.COORDINATES].frame    #junctions
-    polygons = inp[sections.POLYGONS].frame  #subcatchment
-    symbols = inp[sections.SYMBOLS].frame  #raingage
-    
-    #frames = [df1, df2, df3]
-    #result = pd.concat(frames)
-    
-    # add xy coordinates to junctions
-    junctions_coord = pd.concat([junctions, coordinates], axis=1, join="inner")
-
-    # add xy coordinates to subcatchments
-    subs_coord = pd.concat([subs, polygons], axis=1, join="inner")
-
-    # add xy coordinates to raingages
-    raingages_coord = pd.concat([raingages, symbols], axis=1, join="inner")
-    
-    # add xy coordinates to outfalls
-    outfalls_coord = pd.concat([outfalls, coordinates], axis=1, join="inner")
-    
-    
-        # add xy coordinates to conduits
-    junctions_coord['node_id'] = junctions_coord.index
-    outfalls_coord['node_id'] = outfalls_coord.index
-    all_nodes = pd.concat([junctions_coord, outfalls_coord], ignore_index=True)#need to add more nodes like storage, ect.
-    conduits['conduit_id']=conduits.index
-
-    all_nodes.set_index('node_id', inplace=True)
-    conduits.set_index('from_node', inplace=True)
-    
-    # Merging the 'x' and 'y' columns from the first DataFrame into the second DataFrame based on the index
-    conduits = conduits.join(all_nodes[['x', 'y', 'elevation']])
-    #rename xy columns 
-    conduits.rename(columns={'x': 'from_x', 'y': 'from_y','elevation':'from_z'}, inplace=True)
-    conduits.set_index('to_node', inplace=True)
-    conduits = conduits.join(all_nodes[['x', 'y', 'elevation']])
-    conduits.rename(columns={'x': 'to_x', 'y': 'to_y','elevation':'to_z'}, inplace=True)
-    
-
-    #st.dataframe(junctions_coord) 
-    subs_coord = subs_coord.join(all_nodes[['elevation']], on='outlet')
-    #st.dataframe(conduits) 
-    # st.dataframe(all_nodes)
-    #add dropdown menu for selecting dataframe
+    junctions_coord = st.session_state['junctions_coord']
+    outfalls_coord = st.session_state['outfalls_coord']
+    dividers_coord = st.session_state['dividers_coord']
+    storageUnits_coord = st.session_state['storageUnits_coord']
+    raingages_coord = st.session_state['raingages_coord']
+    subs_coord = st.session_state['subs_coord']
+    conduits = st.session_state['conduits']
     #st.dataframe(conduits)
     
     # Create scatter plot using go.Scatter
@@ -378,20 +423,20 @@ def threeD_view(inp):
     # add trace for conduits
     for conduit in conduits.itertuples():
 
-        fig.add_trace(go.Scatter3d(x = [conduit[8], conduit[11]],
-                                 y = [conduit[9], conduit[12]],
-                                 z = [conduit[10], conduit[13]],
+        fig.add_trace(go.Scatter3d(x = [conduit[10], conduit[13]],
+                                 y = [conduit[11], conduit[14]],
+                                 z = [conduit[12], conduit[15]],
                                  mode = 'lines',
                                  line = dict(width = 3, color = 'crimson'),
                                  showlegend=False,
                                  )
                       )
-        fig.add_trace(go.Scatter3d(x = [(conduit[8]+conduit[11])/2],
-                                 y = [(conduit[9]+conduit[12])/2],
-                                 z = [(conduit[10]+conduit[13])/2],
+        fig.add_trace(go.Scatter3d(x = [(conduit[10]+conduit[13])/2],
+                                 y = [(conduit[11]+conduit[14])/2],
+                                 z = [(conduit[12]+conduit[15])/2],
                                  mode = 'text',
                                  showlegend=False,
-                                 text = 'Conduit '+ conduit[7],
+                                 text = 'Conduit '+ conduit[9],
                                  textfont = dict(color='black', size=12),))
    
     
@@ -428,7 +473,7 @@ def run_model(inp):
     from pyswmm import Simulation, Nodes, Links
     #import time
     
-    with Simulation(r'inp/Example1.inp') as sim:
+    with Simulation(r'pyswmm_viz/inp/Example1.inp') as sim:
         #show progress bar
         progress_text = "Operation in progress. Please wait."
         my_bar = st.progress(0, text=progress_text)
@@ -441,7 +486,7 @@ def run_model(inp):
 
     
     #read the output file   
-    out = read_out_file('inp/Example1.out')   
+    out = read_out_file('pyswmm_viz/inp/Example1.out')   
     df = out.to_frame() 
     
     return out,df
@@ -510,13 +555,18 @@ if options == 'Home':
     st.text('This is a web app for visualizing SWMM models.')
 elif options == 'Stats':
     try:
-        stats(inp)
+        stats(inp)  
     except Exception as error:
         st.write('Failed to load the file.')
         st.write("An error occurred:", error)
-        #write the error message
-        
-        st.write()
+
+    try:
+        preprocess(inp)
+    except Exception as error:
+        st.write('Failed to process the file.')
+        st.write("An error occurred:", error)
+       
+
 elif options == '2D view':
     try:
         twoD_view(inp)
