@@ -3,7 +3,7 @@
 
 [OPTIONS]
 ;;Option             Value
-FLOW_UNITS           CFS
+FLOW_UNITS           CMS
 INFILTRATION         HORTON
 FLOW_ROUTING         KINWAVE
 LINK_OFFSETS         DEPTH
@@ -11,13 +11,13 @@ MIN_SLOPE            0
 ALLOW_PONDING        NO
 SKIP_STEADY_STATE    NO
 
-START_DATE           04/13/2021
+START_DATE           12/01/2017
 START_TIME           00:00:00
-REPORT_START_DATE    04/13/2021
+REPORT_START_DATE    12/01/2017
 REPORT_START_TIME    00:00:00
-END_DATE             04/13/2021
+END_DATE             12/01/2017
 END_TIME             06:00:00
-SWEEP_START          01/01
+SWEEP_START          1/1
 SWEEP_END            12/31
 DRY_DAYS             0
 REPORT_STEP          00:15:00
@@ -31,9 +31,9 @@ NORMAL_FLOW_LIMITED  BOTH
 FORCE_MAIN_EQUATION  H-W
 VARIABLE_STEP        0.75
 LENGTHENING_STEP     0
-MIN_SURFAREA         12.566
-MAX_TRIALS           8
-HEAD_TOLERANCE       0.005
+MIN_SURFAREA         0
+MAX_TRIALS           0
+HEAD_TOLERANCE       0
 SYS_FLOW_TOL         5
 LAT_FLOW_TOL         5
 MINIMUM_STEP         0.5
@@ -48,68 +48,78 @@ DRY_ONLY         NO
 [RAINGAGES]
 ;;Name           Format    Interval SCF      Source    
 ;;-------------- --------- ------ ------ ----------
-1                INTENSITY 1:00     1.0      TIMESERIES 11              
-2                INTENSITY 1:00     1.0      TIMESERIES 11              
+100yr            VOLUME    0:10     1.0      TIMESERIES 100yr           
 
 [SUBCATCHMENTS]
 ;;Name           Rain Gage        Outlet           Area     %Imperv  Width    %Slope   CurbLen  SnowPack        
 ;;-------------- ---------------- ---------------- -------- -------- -------- -------- -------- ----------------
-3                2                1                5        25       500      0.5      0                        
-4                1                2                5        25       500      0.5      0                        
-5                1                7                5        25       500      0.5      0                        
-6                1                8                5        25       500      0.5      0                        
+A1               100yr            N1               5        25       500      0.5      0                        
+A2               100yr            N2               5        25       500      0.5      0                        
+A3               100yr            N3               5        25       500      0.5      0                        
 
 [SUBAREAS]
 ;;Subcatchment   N-Imperv   N-Perv     S-Imperv   S-Perv     PctZero    RouteTo    PctRouted 
 ;;-------------- ---------- ---------- ---------- ---------- ---------- ---------- ----------
-3                0.01       0.1        0.05       0.05       25         OUTLET    
-4                0.01       0.1        0.05       0.05       25         OUTLET    
-5                0.01       0.1        0.05       0.05       25         OUTLET    
-6                0.01       0.1        0.05       0.05       25         OUTLET    
+A1               0.01       0.1        0.05       0.05       25         OUTLET    
+A2               0.01       0.1        0.05       0.05       25         OUTLET    
+A3               0.01       0.1        0.05       0.05       25         OUTLET    
 
 [INFILTRATION]
 ;;Subcatchment   MaxRate    MinRate    Decay      DryTime    MaxInfil  
 ;;-------------- ---------- ---------- ---------- ---------- ----------
-3                3.0        0.5        4          7          0         
-4                3.0        0.5        4          7          0         
-5                3.0        0.5        4          7          0         
-6                3.0        0.5        4          7          0         
+A1               3.0        0.5        4          7          0         
+A2               3.0        0.5        4          7          0         
+A3               3.0        0.5        4          7          0         
 
 [JUNCTIONS]
 ;;Name           Elevation  MaxDepth   InitDepth  SurDepth   Aponded   
 ;;-------------- ---------- ---------- ---------- ---------- ----------
-1                0          0          0          0          0         
-2                0          0          0          0          0         
-7                0          0          0          0          0         
-8                0          0          0          0          0         
+N1               4          0          0          0          0         
+N3               2          0          0          0          0         
 
 [OUTFALLS]
 ;;Name           Elevation  Type       Stage Data       Gated    Route To        
 ;;-------------- ---------- ---------- ---------------- -------- ----------------
-9                0          FREE                        NO                       
+Out              1          FREE                        NO                       
+
+[DIVIDERS]
+;;Name           Elevation  Diverted Link    Type       Parameters
+;;-------------- ---------- ---------------- ---------- ----------
+N2               3          4                OVERFLOW   0          0          0          0         
 
 [CONDUITS]
 ;;Name           From Node        To Node          Length     Roughness  InOffset   OutOffset  InitFlow   MaxFlow   
 ;;-------------- ---------------- ---------------- ---------- ---------- ---------- ---------- ---------- ----------
-1                1                7                1000       0.01       0          0          0          0         
-2                2                8                400        0.01       0          0          0          0         
-3                8                7                400        0.01       0          0          0          0         
-4                7                9                400        0.01       0          0          0          0         
+1                N1               N2               400        0.01       0          0          0          0         
+2                N2               N3               400        0.01       0          0          0          0         
+3                N3               Out              400        0.01       0          0          0          0         
+4                N2               N3               400        0.03       0          0          0          0         
 
 [XSECTIONS]
 ;;Link           Shape        Geom1            Geom2      Geom3      Geom4      Barrels    Culvert   
 ;;-------------- ------------ ---------------- ---------- ---------- ---------- ---------- ----------
 1                CIRCULAR     1                0          0          0          1                    
-2                CIRCULAR     1                0          0          0          1                    
+2                CIRCULAR     0.3              0          0          0          1                    
 3                CIRCULAR     1                0          0          0          1                    
-4                CIRCULAR     1                0          0          0          1                    
+4                TRIANGULAR   1.5              1          0          0          1                    
 
 [TIMESERIES]
 ;;Name           Date       Time       Value     
 ;;-------------- ---------- ---------- ----------
-11               04/13/2021 00:00      3         
-11               04/13/2021 01:00      5         
-11               04/13/2021 02:00      1         
+;design rainfall
+100yr                       0          0         
+100yr                       0:10       50        
+100yr                       0:20       80        
+100yr                       0:30       110       
+100yr                       0:40       150       
+100yr                       0:50       210       
+100yr                       1:00       150       
+100yr                       1:10       100       
+100yr                       1:20       70        
+100yr                       1:30       50        
+100yr                       1:40       30        
+100yr                       1:50       10        
+100yr                       2:00       10        
 
 [REPORT]
 ;;Reporting Options
@@ -121,42 +131,40 @@ LINKS ALL
 
 [MAP]
 DIMENSIONS 0.000 0.000 10000.000 10000.000
-Units      None
+Units      Meters
 
 [COORDINATES]
 ;;Node           X-Coord            Y-Coord           
 ;;-------------- ------------------ ------------------
-1                1362.903           6354.839          
-2                7774.194           6290.323          
-7                2169.355           2903.226          
-8                7870.968           2911.290          
-9                2314.516           846.774           
+N1               4822.404           4877.049          
+N3               9062.500           2992.424          
+Out              9062.500           1628.788          
+N2               9085.938           4859.375          
 
 [VERTICES]
 ;;Link           X-Coord            Y-Coord           
 ;;-------------- ------------------ ------------------
+4                9631.148           3920.765          
 
 [Polygons]
 ;;Subcatchment   X-Coord            Y-Coord           
 ;;-------------- ------------------ ------------------
-3                903.226            8048.387          
-3                975.806            5935.484          
-3                -1419.355          6145.161          
-3                -1354.839          7750.000          
-4                7362.903           5951.613          
-4                3451.613           5669.355          
-4                3274.194           8137.097          
-5                1298.387           4290.323          
-5                1532.258           2701.613          
-5                -1064.516          2556.452          
-5                -1379.032          3814.516          
-6                6491.935           3024.194          
-6                4177.419           2975.806          
-6                4225.806           4758.065          
+A1               210.938            5078.125          
+A1               4611.742           5075.758          
+A1               4523.438           8656.250          
+A1               179.924            8617.424          
+A2               4933.712           8579.545          
+A2               8626.894           8617.424          
+A2               8683.712           5056.818          
+A2               4933.712           5056.818          
+A2               4895.833           8636.364          
+A3               226.563            4750.000          
+A3               8816.288           4753.788          
+A3               8759.470           3181.818          
+A3               217.803            3162.879          
 
 [SYMBOLS]
 ;;Gage           X-Coord            Y-Coord           
 ;;-------------- ------------------ ------------------
-1                -580.645           8572.581          
-2                2362.903           8919.355          
+100yr            823.864            9412.879          
 

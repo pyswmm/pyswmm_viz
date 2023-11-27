@@ -91,6 +91,7 @@ def stats(inp):
     
     return None
 
+# preprocess the data
 def preprocess(inp):
     #initialize [junctions_coord, outfalls_coord, dividers_coord, storageUnits_coord] as empty dataframe
     junctions_coord = []
@@ -332,7 +333,7 @@ def twoD_view(inp):
     # Customize layout
     fig.update_xaxes(title_text='X-axis')
     fig.update_yaxes(title_text='Y-axis')
-    fig.update_layout(title='Node Plot')
+    fig.update_layout(title='2D Plot')
     
     
     # Display the Plotly figure in Streamlit
@@ -461,7 +462,7 @@ def threeD_view(inp):
     fig.update_xaxes(title_text='X-axis')
     fig.update_yaxes(title_text='Y-axis')
     
-    fig.update_layout(title='Node Plot')
+    fig.update_layout(title='3D Plot')
     
     
     # Display the Plotly figure in Streamlit
@@ -469,6 +470,7 @@ def threeD_view(inp):
     
     return None
 
+# run the model page
 def run_model(inp):
     from pyswmm import Simulation, Nodes, Links
     #import time
@@ -491,7 +493,7 @@ def run_model(inp):
     
     return out,df
 
-
+# simulation results page
 def simulation_results(out, df):
 
     #st.dataframe(df)
