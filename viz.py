@@ -68,7 +68,8 @@ options = st.sidebar.radio('Pages',
                                       'Run the model',
                                       'Simulation results',
                                       'Path view',
-                                      'Water flux view'])
+                                      'Water flux view',
+                                      'BIM view'])
 
 # home page
 
@@ -174,6 +175,7 @@ def preprocess(inp):
     try:
         conduits = inp[sections.CONDUITS].frame
         conduits['conduit_id']=conduits.index
+        xsections = inp[sections.XSECTIONS].frame    
     except Exception as error:  
         st.write('Failed to load the conduits data.')
 
@@ -208,9 +210,11 @@ def preprocess(inp):
             conduits.set_index('to_node', inplace=True,drop=False)
             conduits = conduits.join(all_nodes[['x', 'y', 'elevation']])
             conduits.rename(columns={'x': 'to_x', 'y': 'to_y','elevation':'to_z'}, inplace=True)
-            
+            conduits.set_index('conduit_id', inplace=True,drop=False)
+            ###combine conduits and xsections
+            conduits = conduits.join(xsections)
             # #st.dataframe(conduits)
-            st.dataframe(conduits)
+            #st.dataframe(conduits)
             st.session_state['conduits'] = conduits
     else:
         st.write('Failed to combine the nodes data.')
@@ -220,6 +224,7 @@ def preprocess(inp):
         st.session_state['subs_coord'] = subs_coord
     except Exception as error:
         st.write('Failed to load the subcatchments data.')
+
         
     return None
     
@@ -239,18 +244,7 @@ def twoD_view(inp):
     # Create scatter plot using go.Scatter
     fig = go.Figure()
 
-    # Add scatter trace
-    fig.add_trace(
-        go.Scatter(
-            x=junctions_coord['x'],
-            y=junctions_coord['y'],
-            mode='markers+text',
-            text=junctions_coord.index,
-            textposition='top center',
-            marker=dict(size=12, opacity=0.8),
-            
-        )
-    )
+
     
     # add polygon trace for subcatchments
     num = 0
@@ -304,7 +298,7 @@ def twoD_view(inp):
         fig.add_trace(go.Scatter(x = [conduit[10], conduit[13]],
                                  y = [conduit[11], conduit[14]],
                                  mode = 'lines',
-                                 line = dict(width = 3, color = 'crimson'),
+                                 line = dict(width = 3*conduit[17], color = 'rgb(0,176,246)'),
                                  )
                       )
         fig.add_trace(go.Scatter(x = [(conduit[10]+conduit[13])/2],
@@ -314,7 +308,18 @@ def twoD_view(inp):
                                  text = 'Conduit '+ conduit[9],
                                  textfont = dict(color='black', size=12),))
    
-    
+     # Add scatter trace for junctions
+    fig.add_trace(
+        go.Scatter(
+            x=junctions_coord['x'],
+            y=junctions_coord['y'],
+            mode='markers+text',
+            text=junctions_coord.index,
+            textposition='top center',
+            marker=dict(size=12, opacity=0.8,color = 'rgb(0,100,80)'),
+            
+        )
+    )   
     # Set the x and y axes to have the same range
     x_min = junctions_coord['x'].min()
     x_max = junctions_coord['x'].max()
@@ -365,7 +370,7 @@ def threeD_view(inp):
             mode='markers+text',
             text=junctions_coord.index,
             textposition='top center',
-            marker=dict(size=4, opacity=0.8),
+            marker=dict(size=4, opacity=0.8,color = 'rgb(0,100,80)'),
             
         )
     )
@@ -428,7 +433,7 @@ def threeD_view(inp):
                                  y = [conduit[11], conduit[14]],
                                  z = [conduit[12], conduit[15]],
                                  mode = 'lines',
-                                 line = dict(width = 3, color = 'crimson'),
+                                 line = dict(width = 3*conduit[17], color = 'rgb(0,176,246)'),
                                  showlegend=False,
                                  )
                       )
@@ -441,29 +446,16 @@ def threeD_view(inp):
                                  textfont = dict(color='black', size=12),))
    
     
-    # Set the x and y axes to have the same range
-    # x_min = junctions_coord['x'].min()
-    # x_max = junctions_coord['x'].max()
-    # y_min = junctions_coord['y'].min()
-    # y_max = junctions_coord['y'].max()
-    # z_min = junctions_coord['z'].min()
-    # z_max = junctions_coord['z'].max()
-    
-    fig.update_layout(
-        xaxis=dict(scaleratio=1, showgrid=False),
-        yaxis=dict(scaleratio=1, showgrid=False),
-    )
-    #fig.update_layout(yaxis_scaleanchor="x")
+
+    fig.update_layout(scene_aspectmode='manual',scene_aspectratio=dict(x=1, y=1, z=0.5))##can change the z value to change the view
     fig.update_layout(showlegend=False,
-                    autosize=False,
-                    width=800,
-                    height=800,)
+                        width=1000,
+                        height=1000,)
     # # Customize layout
     fig.update_xaxes(title_text='X-axis')
     fig.update_yaxes(title_text='Y-axis')
     
     fig.update_layout(title='3D Plot')
-    
     
     # Display the Plotly figure in Streamlit
     st.plotly_chart(fig)
@@ -552,9 +544,28 @@ def simulation_results(out, df):
     
     return None
 
+# path view page
+def path_view(out):
+    
+    st.write('under construction')
+    return None
+
+# path view page
+def water_flux(out):
+    
+    st.write('under construction')
+    return None
+
+# path view page
+def bim_view(out):
+    
+    st.write('under construction')
+    return None
+
 if options == 'Home':
     st.header('Home')
     st.text('This is a web app for visualizing SWMM models.')
+
 elif options == 'Stats':
     try:
         stats(inp)  
@@ -567,20 +578,21 @@ elif options == 'Stats':
     except Exception as error:
         st.write('Failed to process the file.')
         st.write("An error occurred:", error)
-       
-
+        
 elif options == '2D view':
     try:
         twoD_view(inp)
     except Exception as error:
         st.write('Failed to load the file.')
         st.write("An error occurred:", error)
+
 elif options == '3D view':
     try:
         threeD_view(inp)
     except Exception as error:
         st.write('Failed to load the file.')
         st.write("An error occurred:", error)    
+
 elif options == 'Run the model':
     #add a run button to start the function
     if 'run_button' not in st.session_state:
@@ -599,9 +611,8 @@ elif options == 'Run the model':
             st.write('Failed to load the file.')
             st.write("An error occurred:", error)
         
-        st.session_state.run_button = False
+        st.session_state.run_button = False   
 
-    
 elif options == 'Simulation results':
 
     try:
@@ -609,6 +620,39 @@ elif options == 'Simulation results':
             st.write('Please run the model first.')
         else:
             simulation_results(st.session_state.out, st.session_state.out_df)
+    except Exception as error:
+        st.write('Failed to load the file.')
+        st.write("An error occurred:", error)
+
+elif options == 'Path view':
+
+    try:
+        if st.session_state.out is None :
+            st.write('Please run the model first.')
+        else:
+            path_view(st.session_state.out)
+    except Exception as error:
+        st.write('Failed to load the file.')
+        st.write("An error occurred:", error)
+        
+elif options == 'Water flux view':
+
+    try:
+        if st.session_state.out is None :
+            st.write('Please run the model first.')
+        else:
+            water_flux(st.session_state.out)
+    except Exception as error:
+        st.write('Failed to load the file.')
+        st.write("An error occurred:", error)
+        
+elif options == 'BIM view':
+
+    try:
+        if st.session_state.out is None :
+            st.write('Please run the model first.')
+        else:
+            bim_view(st.session_state.out)
     except Exception as error:
         st.write('Failed to load the file.')
         st.write("An error occurred:", error)
