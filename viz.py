@@ -498,10 +498,6 @@ def simulation_results(out, df):
                 width=500,
                 height=400,)
             st.plotly_chart(fig)
-
-    
-    #
-    #Create a time serie plot
     
     return None
 
