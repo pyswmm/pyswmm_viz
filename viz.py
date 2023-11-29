@@ -8,7 +8,8 @@ from swmm_api.output_file import VARIABLES, OBJECTS
 from swmm_api import swmm5_run, read_out_file,SwmmOutput
 import os
 import pyvista as pv
-
+from bim import bim_view
+#from pyswmm import Simulation, Nodes, Links
 
 # Initialization of session state variables
 if 'out' not in st.session_state:
@@ -47,7 +48,7 @@ if uploaded_file is not None:
 
     #print(inp)
 else:
-    uploaded_file = "pyswmm_viz/inp/Example1.inp"
+    uploaded_file = "inp/Example1.inp"###desktop/laptop change path
     inp = SwmmInput.read_file(uploaded_file)
   
 
@@ -464,10 +465,10 @@ def threeD_view(inp):
 
 # run the model page
 def run_model(inp):
-    from pyswmm import Simulation, Nodes, Links
+    
     #import time
     
-    with Simulation(r'pyswmm_viz/inp/Example1.inp') as sim:
+    with Simulation(r'inp/Example1.inp') as sim:######desktop/laptop change path
         #show progress bar
         progress_text = "Operation in progress. Please wait."
         my_bar = st.progress(0, text=progress_text)
@@ -480,7 +481,7 @@ def run_model(inp):
 
     
     #read the output file   
-    out = read_out_file('pyswmm_viz/inp/Example1.out')   
+    out = read_out_file('inp/Example1.out')   ######desktop/laptop change path
     df = out.to_frame() 
     
     return out,df
@@ -537,10 +538,6 @@ def simulation_results(out, df):
                 width=500,
                 height=400,)
             st.plotly_chart(fig)
-
-    
-    #
-    #Create a time serie plot
     
     return None
 
@@ -557,10 +554,10 @@ def water_flux(out):
     return None
 
 # path view page
-def bim_view(out):
+# def bim_view(out):
     
-    st.write('under construction')
-    return None
+#     st.write('under construction')
+#     return None
 
 if options == 'Home':
     st.header('Home')
@@ -648,11 +645,8 @@ elif options == 'Water flux view':
         
 elif options == 'BIM view':
 
-    try:
-        if st.session_state.out is None :
-            st.write('Please run the model first.')
-        else:
-            bim_view(st.session_state.out)
+    try:     
+        bim_view()
     except Exception as error:
         st.write('Failed to load the file.')
         st.write("An error occurred:", error) 
