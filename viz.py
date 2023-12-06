@@ -17,7 +17,7 @@ if 'out' not in st.session_state:
 if 'out_df' not in st.session_state:
     st.session_state['out_df'] = None    
 
-st.session_state['inp'] = "inp/Example1.inp"#default path for inp file
+C
 st.session_state['rpt'] = 'inp/Example1.out'#default path for rpt file
 
 # set streamlit page title
@@ -45,7 +45,7 @@ if uploaded_file is not None:
     st.session_state['rpt'] = 'tempDir/temp.out'   ######desktop/laptop change path 
 
 else:
-    
+    st.session_state['inp'] = 'inp/Example1.inp'#default path for inp file
     inp = SwmmInput.read_file(st.session_state['inp'])#default path for inp file
 
 
