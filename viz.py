@@ -17,7 +17,8 @@ if 'out' not in st.session_state:
 if 'out_df' not in st.session_state:
     st.session_state['out_df'] = None    
 
-
+st.session_state['inp'] = "inp/Example1.inp"#default path for inp file
+st.session_state['rpt'] = 'inp/Example1.out'#default path for rpt file
 
 # set streamlit page title
 st.title('SWMM Visualization')
@@ -33,24 +34,20 @@ if uploaded_file is not None:
     file_details = {"FileName":uploaded_file.name,"FileType":uploaded_file.type}
     #st.write(file_details)
     
-    with open(os.path.join("pyswmm_viz/tempDir",'temp.inp'),'wb') as f:
+    with open(os.path.join("tempDir",'temp.inp'),'wb') as f:
         f.write(uploaded_file.getbuffer())
-    st.success('Uploaded file successfully')
+    st.success('File Uploaded successfully')
     
     
-    temp_file = "pyswmm_viz/tempDir/temp.inp"
+    temp_file = "tempDir/temp.inp"
     inp = SwmmInput.read_file(temp_file)
-    #inp = SwmmInput.read_file(uploaded_file)
-    #inp.write_file('temp.inp')
-    #inp = SwmmInput.read_file('temp.inp')
-    #st.write(file_read)
-    #inp = SwmmInput.read_file(file_read)
+    st.session_state['inp'] = temp_file
+    st.session_state['rpt'] = 'tempDir/temp.out'   ######desktop/laptop change path 
 
-    #print(inp)
 else:
-    uploaded_file = "inp/Example1.inp"###desktop/laptop change path
-    inp = SwmmInput.read_file(uploaded_file)
-  
+    
+    inp = SwmmInput.read_file(st.session_state['inp'])#default path for inp file
+
 
 #run  swmm model using pyswmm  
 #swmm5_run('new_inputfile.inp', progress_size=100)    
@@ -467,8 +464,9 @@ def threeD_view(inp):
 def run_model(inp):
     
     #import time
-    
-    with Simulation(r'inp/Example1.inp') as sim:######desktop/laptop change path
+    st.write(st.session_state['inp'])
+    #with Simulation(r'inp/Example1.inp') as sim:######desktop/laptop change path
+    with Simulation(st.session_state['inp']) as sim:
         #show progress bar
         progress_text = "Operation in progress. Please wait."
         my_bar = st.progress(0, text=progress_text)
@@ -479,9 +477,10 @@ def run_model(inp):
 
     st.write("Simulation Done!")
 
+    st.write(st.session_state['rpt'])
+    #read the output file  
     
-    #read the output file   
-    out = read_out_file('inp/Example1.out')   ######desktop/laptop change path
+    out = read_out_file(st.session_state['rpt'])   
     df = out.to_frame() 
     
     return out,df
