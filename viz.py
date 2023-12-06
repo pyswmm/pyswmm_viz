@@ -848,9 +848,9 @@ elif options == 'Water flux view':
         st.write("An error occurred:", error)
         
 elif options == 'BIM view':
-
-    try:     
-        bim_view()
-    except Exception as error:
-        st.write('Failed to load the file.')
-        st.write("An error occurred:", error) 
+    st.write('under construction')
+    # try:     
+    #     bim_view()
+    # except Exception as error:
+    #     st.write('Failed to load the file.')
+    #     st.write("An error occurred:", error) 
