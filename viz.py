@@ -17,7 +17,7 @@ if 'out' not in st.session_state:
 if 'out_df' not in st.session_state:
     st.session_state['out_df'] = None    
 
-C
+st.session_state['inp'] = 'inp/Example1.inp'
 st.session_state['rpt'] = 'inp/Example1.out'#default path for rpt file
 
 # set streamlit page title
