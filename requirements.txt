@@ -4,3 +4,4 @@ pyswmm
 swmm_api
 pyvista
 networkx
+stpyvista
