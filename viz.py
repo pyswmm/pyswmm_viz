@@ -17,7 +17,7 @@ if 'out' not in st.session_state:
 if 'out_df' not in st.session_state:
     st.session_state['out_df'] = None    
 
-st.session_state['inp'] = "inp/Example1.inp"#default path for inp file
+st.session_state['inp'] = 'inp/Example1.inp'#default path for inp file
 st.session_state['rpt'] = 'inp/Example1.out'#default path for rpt file
 
 # set streamlit page title
@@ -45,7 +45,7 @@ if uploaded_file is not None:
     st.session_state['rpt'] = 'tempDir/temp.out'   ######desktop/laptop change path 
 
 else:
-    
+    st.session_state['inp'] = 'inp/Example1.inp'
     inp = SwmmInput.read_file(st.session_state['inp'])#default path for inp file
 
 
@@ -464,7 +464,7 @@ def threeD_view(inp):
 def run_model(inp):
     
     #import time
-    st.write(st.session_state['inp'])
+    #st.write(st.session_state['inp'])
     #with Simulation(r'inp/Example1.inp') as sim:######desktop/laptop change path
     with Simulation(st.session_state['inp']) as sim:
         #show progress bar
@@ -477,7 +477,7 @@ def run_model(inp):
 
     st.write("Simulation Done!")
 
-    st.write(st.session_state['rpt'])
+    #st.write(st.session_state['rpt'])
     #read the output file  
     
     out = read_out_file(st.session_state['rpt'])   
