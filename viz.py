@@ -648,4 +648,4 @@ elif options == 'BIM view':
         bim_view()
     except Exception as error:
         st.write('Failed to load the file.')
-        st.write("An error occurred:", error)
+        st.write("An error occurred:", error) 
