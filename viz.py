@@ -9,6 +9,7 @@ from swmm_api import swmm5_run, read_out_file,SwmmOutput
 import os
 import pyvista as pv
 from bim import bim_view
+import networkx as nx
 #from pyswmm import Simulation, Nodes, Links
 
 # Initialization of session state variables
@@ -36,7 +37,7 @@ if uploaded_file is not None:
     
     with open(os.path.join("tempDir",'temp.inp'),'wb') as f:
         f.write(uploaded_file.getbuffer())
-    st.success('File Uploaded successfully')
+    #st.success('File Uploaded successfully')
     
     
     temp_file = "tempDir/temp.inp"
@@ -464,7 +465,7 @@ def threeD_view(inp):
 def run_model(inp):
     
     #import time
-    st.write(st.session_state['inp'])
+    #st.write(st.session_state['inp'])
     #with Simulation(r'inp/Example1.inp') as sim:######desktop/laptop change path
     with Simulation(st.session_state['inp']) as sim:
         #show progress bar
@@ -477,7 +478,7 @@ def run_model(inp):
 
     st.write("Simulation Done!")
 
-    st.write(st.session_state['rpt'])
+    #st.write(st.session_state['rpt'])
     #read the output file  
     
     out = read_out_file(st.session_state['rpt'])   
@@ -541,13 +542,217 @@ def simulation_results(out, df):
     return None
 
 # path view page
-def path_view(out):
+def path_view(out,df):
     
-    st.write('under construction')
+    #simple 2d plot
+    junctions_coord = st.session_state['junctions_coord']
+    outfalls_coord = st.session_state['outfalls_coord']
+    dividers_coord = st.session_state['dividers_coord']
+    storageUnits_coord = st.session_state['storageUnits_coord']
+    raingages_coord = st.session_state['raingages_coord']
+    subs_coord = st.session_state['subs_coord']
+    conduits = st.session_state['conduits']
+    #st.dataframe(conduits)
+    
+    # Create scatter plot using go.Scatter
+    fig = go.Figure()
+
+    # add polygon trace for subcatchments
+    num = 0
+    for polygon in subs_coord['polygon']:
+        x,y = zip(*polygon)
+        fig.add_trace(go.Scatter(
+                        x=list(x) + [x[0]],  # Close the polygon by repeating the first point
+                        y=list(y) + [y[0]],
+                        fill="toself",
+                        fillcolor='rgba(92,96,232,0.2)',
+                        line_color='rgba(92,96,232,0.2)',
+                    )
+                    )
+    
+        fig.add_trace(go.Scatter(x = [sum(x)/len(x)],
+                                 y = [sum(y)/len(y)],
+                                 mode = 'text',
+                                 text = 'Sub ' + subs_coord.index[num],
+                                 textfont = dict(color='black', size=8),))
+        num = num + 1                        
+        
+    # # add symbol trace for raingages
+    fig.add_trace(
+        go.Scatter(
+            x=raingages_coord['x'],
+            y=raingages_coord['y'],
+            mode='markers+text',
+            text=raingages_coord.index,
+            textposition='top center',
+            marker=dict(size=8, opacity=0.8),
+            
+        )
+    )
+    
+     # add symbol trace for outfalls
+    fig.add_trace(
+        go.Scatter(
+            x=outfalls_coord['x'],
+            y=outfalls_coord['y'],
+            mode='markers+text',
+            text=outfalls_coord.index,
+            textposition='top center',
+            marker=dict(size=8, opacity=0.8),  
+        )
+    )   
+    
+    
+    # add trace for conduits
+    for conduit in conduits.itertuples():
+
+        fig.add_trace(go.Scatter(x = [conduit[10], conduit[13]],
+                                 y = [conduit[11], conduit[14]],
+                                 mode = 'lines',
+                                 line = dict(width = conduit[17], color = 'rgb(0,176,246)'),
+                                 )
+                      )
+        fig.add_trace(go.Scatter(x = [(conduit[10]+conduit[13])/2],
+                                 y = [(conduit[11]+conduit[14])/2],
+                                 mode = 'text',
+                                 showlegend=True,
+                                 text = 'Conduit '+ conduit[9],
+                                 textfont = dict(color='black', size=8),))
+   
+     # Add scatter trace for junctions
+    fig.add_trace(
+        go.Scatter(
+            x=junctions_coord['x'],
+            y=junctions_coord['y'],
+            mode='markers+text',
+            text=junctions_coord.index,
+            textposition='top center',
+            marker=dict(size=6, opacity=0.8,color = 'rgb(0,100,80)'),
+            
+        )
+    )   
+    # Set the x and y axes to have the same range
+    x_min = junctions_coord['x'].min()
+    x_max = junctions_coord['x'].max()
+    y_min = junctions_coord['y'].min()
+    y_max = junctions_coord['y'].max()
+    
+    fig.update_layout(
+        xaxis=dict(scaleratio=1, showgrid=False),
+        yaxis=dict(scaleratio=1, showgrid=False)
+    )
+    #fig.update_layout(yaxis_scaleanchor="x")
+    fig.update_layout(showlegend=False,
+                    autosize=False,
+                    width=800,
+                    height=800,)
+    # Customize layout
+    fig.update_xaxes(title_text='X-axis')
+    fig.update_yaxes(title_text='Y-axis')
+    fig.update_layout(title='2D Plot')
+    
+    
+    # Display the Plotly figure in Streamlit
+    st.plotly_chart(fig)
+    
+    
+    
+    #st.write('under construction')
+    #st.dataframe(df)
+    col1, col2 = st.columns(2)
+    #create two dropdown buttons in col1 for selecting variables
+    
+    
+    
+    with col1:
+        from_node = st.selectbox("Select a start node:", out.labels['node'])
+        to_node = st.selectbox("Select a end node:", out.labels['node'])
+        #find if there is a path between from_node and to_node
+        #st.dataframe(conduits)
+        #use networkx to create a graph 
+        G = nx.Graph()
+        for conduit in conduits.itertuples():
+            G.add_edge(conduit[1], conduit[2], edge_id = conduit[0])
+            
+        if from_node == to_node:
+            st.write('Please select different nodes.')
+            path = []
+        else:
+            path = nx.has_path(G, from_node, to_node)
+        #output the path
+        if path:
+            st.write('There is a path between', from_node, 'and', to_node)
+            path = nx.shortest_path(G, from_node, to_node)
+            #st.write('The shortest path is:', path)
+        else:
+            if from_node == to_node:
+                pass
+            else:
+                st.write('There is no path between', from_node, 'and', to_node)
+                path = []
+        st.write(path)
+        # 
+        edge_id_list=[]
+        for i in range(len(path) - 1):
+            source_node = path[i]
+            target_node = path[i + 1]
+            edge_id = G[source_node][target_node]['edge_id']
+            edge_id_list.append(edge_id)
+        #st.write(edge_id_list)
+        
+        
+        #path = 
+        #st.write(path)
+
+    with col2:
+#plot the path
+        fig = go.Figure()
+        start_x = 0
+        start_node = from_node
+        for edge_id in edge_id_list:
+            conduit = conduits.loc[edge_id]
+            #st.dataframe(conduit)
+            
+            if conduit[0] == start_node:
+                
+                start_x = start_x
+                start_y = conduit[11]
+                end_x = start_x + conduit[2]
+                end_y = conduit[14]
+                start_node = conduit[1]
+            else:
+                start_x = start_x
+                start_y = conduit[14]
+                end_x = start_x + conduit[2]
+                end_y = conduit[11]
+                start_node = conduit[0]
+                #st.write([start_y,end_y])
+            fig.add_trace(go.Scatter(x=[start_x, end_x],
+                                    y=[start_y,end_y],
+                                    mode='lines',
+                                    line = dict(color = 'lightblue'),
+                                    text = 'Conduit '+ conduit[8],
+                                    showlegend=False,
+                                    )
+                            )
+
+            
+            start_x = start_x + conduit[2]
+            #set figure layout width and height
+        fig.update_layout(
+            autosize=False,
+            width=500,
+            height=400,)
+        st.plotly_chart(fig)
+    ###
+    st.write(edge_id_list)
+    
+    sub_out = out.get_part(edge_id_list)
+    st.dataframe(sub_out)
     return None
 
 # path view page
-def water_flux(out):
+def water_flux(out,df):
     
     st.write('under construction')
     return None
@@ -626,7 +831,7 @@ elif options == 'Path view':
         if st.session_state.out is None :
             st.write('Please run the model first.')
         else:
-            path_view(st.session_state.out)
+            path_view(st.session_state.out, st.session_state.out_df)
     except Exception as error:
         st.write('Failed to load the file.')
         st.write("An error occurred:", error)
