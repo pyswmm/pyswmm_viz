@@ -7,8 +7,8 @@ from swmm_api.input_file import read_inp_file, SwmmInput, section_labels as sect
 from swmm_api.output_file import VARIABLES, OBJECTS
 from swmm_api import swmm5_run, read_out_file,SwmmOutput
 import os
-import pyvista as pv
-from bim import bim_view
+#import pyvista as pv
+#from bim import bim_view
 import networkx as nx
 #from pyswmm import Simulation, Nodes, Links
 
