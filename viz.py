@@ -489,7 +489,7 @@ def run_model(type_dropdown, id_dropdown): #need to add a dropdown button for se
                 df = pd.DataFrame({"x":x, "y":y})
                 if ind % 20 == 0:
                     chart.line_chart(df,x='x',y='y')
-        st.write(y)                 
+                 
         my_bar.empty()
 
     st.write("Simulation Done!")
