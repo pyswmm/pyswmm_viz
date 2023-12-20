@@ -49,15 +49,6 @@ else:
     st.session_state['inp'] = 'inp/Example1.inp'#default path for inp file
     inp = SwmmInput.read_file(st.session_state['inp'])#default path for inp file
 
-
-#run  swmm model using pyswmm  
-#swmm5_run('new_inputfile.inp', progress_size=100)    
-
-## Read the OUT-File
-#out = read_out_file('new_inputfile.out')   # type: swmm_api.SwmmOut
-#df = out.to_frame()  # type: pandas.DataFrame
-
-
 # layout
 options = st.sidebar.radio('Pages',
                            options = ['Home',
@@ -462,18 +453,43 @@ def threeD_view(inp):
     return None
 
 # run the model page
-def run_model(inp):
+def run_model(type_dropdown, id_dropdown): #need to add a dropdown button for selecting a variable
     
-    #import time
-    #st.write(st.session_state['inp'])
-    #with Simulation(r'inp/Example1.inp') as sim:######desktop/laptop change path
     with Simulation(st.session_state['inp']) as sim:
         #show progress bar
         progress_text = "Operation in progress. Please wait."
         my_bar = st.progress(0, text=progress_text)
+        
+        st.write(type_dropdown, id_dropdown)
+        
+        if type_dropdown == 'None':
+            pass
+        elif type_dropdown == 'Node head':
+            track_info = Nodes(sim)[id_dropdown]
+            x, y = [], []
+            chart = st.line_chart()
+        elif type_dropdown == 'Link flow':
+            track_info = Links(sim)[id_dropdown]
+            x, y = [], []
+            chart = st.line_chart()
+            
         for ind, step in enumerate(sim):  
+
             my_bar.progress(round(sim.percent_complete*100), text=progress_text)
-        #time.sleep(1)
+            
+            if type_dropdown == 'None':
+                pass
+            else:
+                x.append(sim.current_time)
+                if type_dropdown == 'Node head':
+                    y.append(track_info.head)
+                elif type_dropdown == 'Link flow':
+                    y.append(track_info.flow)
+                    
+                df = pd.DataFrame({"x":x, "y":y})
+                if ind % 20 == 0:
+                    chart.line_chart(df,x='x',y='y')
+        st.write(y)                 
         my_bar.empty()
 
     st.write("Simulation Done!")
@@ -795,6 +811,31 @@ elif options == '3D view':
         st.write("An error occurred:", error)    
 
 elif options == 'Run the model':
+    
+    junction_list = st.session_state['junctions_coord'].index.tolist()
+    #sub_list = st.session_state['subs_coord'].index.tolist()
+    link_list = st.session_state['conduits'].index.tolist()
+
+    #dropdown selection 
+    col1, col2 = st.columns(2)
+    #create a dropdown button in col1 for selecting a variable
+    with col1:
+    #type_dropdown: subcatchment, node, link
+        type_dropdown = st.selectbox("Select a monitor variable:(optional, slower)", ['None','Node head', 'Link flow'])
+        #st.write("You selected:", type_dropdown)
+    
+    with col2:
+        #create a dropdown button for id_selections
+        if type_dropdown =='None':
+            id_selections = []
+        elif type_dropdown == 'Node head':
+            id_selections = junction_list
+        elif type_dropdown == 'Link flow':
+            id_selections = link_list
+        id_dropdown = st.selectbox("Select an id:", id_selections)
+
+    st.write('You selected:', type_dropdown, id_dropdown)
+    
     #add a run button to start the function
     if 'run_button' not in st.session_state:
         st.session_state.run_button = False
@@ -806,7 +847,8 @@ elif options == 'Run the model':
 
     if st.session_state.run_button:
         try:
-            st.session_state.out, st.session_state.out_df = run_model(inp)
+            
+            st.session_state.out, st.session_state.out_df = run_model(type_dropdown, id_dropdown)
             st.dataframe(st.session_state.out_df)
         except Exception as error:
             st.write('Failed to load the file.')
