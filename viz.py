@@ -7,6 +7,7 @@ from swmm_api.input_file import read_inp_file, SwmmInput, section_labels as sect
 from swmm_api.output_file import VARIABLES, OBJECTS
 from swmm_api import swmm5_run, read_out_file,SwmmOutput
 import os
+import streamlit.components.v1 as components
 #import pyvista as pv
 #from bim import bim_view
 import networkx as nx
@@ -447,6 +448,26 @@ def threeD_view(inp):
     
     fig.update_layout(title='3D Plot')
     
+    #compute the numbers of the plot
+    trace_no = len(fig.data)
+    #st.write(trace_no)
+    
+    #add button to hide all annotations
+    fig.update_layout(
+        updatemenus=[
+            dict(
+                type="buttons",
+                buttons=[
+                    dict(label="Hide all annotations",
+                         method="update",
+                         args=[{"text": [[]*trace_no]}]),
+                    dict(label="Show all annotations",
+                         method="update",
+                         args=[{"text": fig.layout.annotations}]),
+                ],
+            )
+        ])
+    
     # Display the Plotly figure in Streamlit
     st.plotly_chart(fig)
     
@@ -768,16 +789,30 @@ def path_view(out,df):
     return None
 
 # path view page
-def water_flux(out,df):
+def water_flux(out):
     
-    st.write('under construction')
+    try:
+    #create a sankey diagram
+        HtmlFile = open("H:/swmm_plot_examples/lid_plot.html", 'r', encoding='utf-8')
+        source_code = HtmlFile.read() 
+        components.html(source_code,height = 800,width = 1200)
+    except:
+        pass
+    
+ 
     return None
 
 # path view page
-# def bim_view(out):
+def bim_view():
     
-#     st.write('under construction')
-#     return None
+    try:
+        HtmlFile = open("H:/work/Downloads/swmm_dash/_continuity_sankey_plot.html", 'r', encoding='utf-8')
+        source_code = HtmlFile.read() 
+        components.html(source_code,height = 1600,width = 1200)      
+    except:
+        pass
+     
+    return None
 
 if options == 'Home':
     st.header('Home')
@@ -891,8 +926,8 @@ elif options == 'Water flux view':
         
 elif options == 'BIM view':
     st.write('under construction')
-    # try:     
-    #     bim_view()
-    # except Exception as error:
-    #     st.write('Failed to load the file.')
-    #     st.write("An error occurred:", error) 
+    try:     
+        bim_view()
+    except Exception as error:
+        st.write('Failed to load the file.')
+        st.write("An error occurred:", error) 
