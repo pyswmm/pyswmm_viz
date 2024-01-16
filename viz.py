@@ -695,15 +695,15 @@ def path_view(out,df):
     
     
     #st.write('under construction')
-    #st.dataframe(df)
+    #st.dataframe(conduits)
     col1, col2 = st.columns(2)
     #create two dropdown buttons in col1 for selecting variables
     
     
     
     with col1:
-        from_node = st.selectbox("Select a start node:", out.labels['node'])
-        to_node = st.selectbox("Select a end node:", out.labels['node'])
+        from_node = st.selectbox("Select a start node:", out.labels['node'], index =0)
+        to_node = st.selectbox("Select a end node:", out.labels['node'], index =1)
         #find if there is a path between from_node and to_node
         #st.dataframe(conduits)
         #use networkx to create a graph 
@@ -750,32 +750,84 @@ def path_view(out,df):
             conduit = conduits.loc[edge_id]
             #st.dataframe(conduit)
             
+            height = conduit[16]
             if conduit[0] == start_node:
-                
+                #plot bottom line
                 start_x = start_x
                 start_y = conduit[11]
                 end_x = start_x + conduit[2]
                 end_y = conduit[14]
                 start_node = conduit[1]
+                #plot top line
+                start_x_top = start_x
+                start_y_top = conduit[11] + height
+                end_x_top = start_x + conduit[2]
+                end_y_top = conduit[14] + height
+                
+                
+                
             else:
+                #plot bottom line
                 start_x = start_x
                 start_y = conduit[14]
                 end_x = start_x + conduit[2]
                 end_y = conduit[11]
                 start_node = conduit[0]
-                #st.write([start_y,end_y])
+                #plot top line
+                start_x_top = start_x
+                start_y_top = conduit[14] + height
+                end_x_top = start_x + conduit[2]
+                end_y_top = conduit[11] + height
+            #bottom line
             fig.add_trace(go.Scatter(x=[start_x, end_x],
                                     y=[start_y,end_y],
                                     mode='lines',
                                     line = dict(color = 'lightblue'),
                                     text = 'Conduit '+ conduit[8],
                                     showlegend=False,
+                                    
                                     )
                             )
+            #top line
+            fig.add_trace(go.Scatter(x=[start_x_top, end_x_top],
+                                    y=[start_y_top,end_y_top],
+                                    mode='lines',
+                                    line = dict(color = 'lightblue'),
+                                    text = 'Conduit '+ conduit[8],
+                                    showlegend=False,
+                                    fill='tonexty',
+                                    fillcolor='rgba(131, 161, 182,0.3)',
+                                    )
+                            )
+            #plot the node as bar
+            fig.add_trace(go.Bar(x = [start_x],
+                                 y = [height*2],
+                                 width = 40,
+                                 base = start_y,
+                                 marker_color = 'rgba(131, 161, 182,0.3)',
+                                 showlegend=False,
+                                 marker_line_color = 'blue',
+                                 marker_line_width=1.5)                                
+                                 )
+                            
+            
+            
 
             
             start_x = start_x + conduit[2]
-            #set figure layout width and height
+            
+        #plot the last node as bar
+        fig.add_trace(go.Bar(x = [end_x],
+                            y = [height*2],
+                            width = 40,
+                            base = end_y,
+                            marker_color = 'rgba(131, 161, 182,0.3)',
+                            showlegend=False,
+                            marker_line_color = 'blue',
+                            marker_line_width=1.5)                                
+                            )
+        
+        #set figure layout width and height                
         fig.update_layout(
             autosize=False,
             width=500,
