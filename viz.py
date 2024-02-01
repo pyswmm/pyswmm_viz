@@ -19,8 +19,8 @@ if 'out' not in st.session_state:
 if 'out_df' not in st.session_state:
     st.session_state['out_df'] = None    
 
-st.session_state['inp'] = 'pyswmm_viz/inp/Example1.inp'
-st.session_state['rpt'] = 'pyswmm_viz/inp/Example1.out'#default path for rpt file
+st.session_state['inp'] = 'inp/Example1.inp'
+st.session_state['rpt'] = 'inp/Example1.out'#default path for rpt file
 
 # set streamlit page title
 st.title('SWMM Visualization')
@@ -41,13 +41,13 @@ if uploaded_file is not None:
     #st.success('File Uploaded successfully')
     
     
-    temp_file = "pyswmm_viz/tempDir/temp.inp"
+    temp_file = "tempDir/temp.inp"
     inp = SwmmInput.read_file(temp_file)
     st.session_state['inp'] = temp_file
-    st.session_state['rpt'] = 'pyswmm_viz/tempDir/temp.out'   ######desktop/laptop change path 
+    st.session_state['rpt'] = 'tempDir/temp.out'   ######desktop/laptop change path 
 
 else:
-    st.session_state['inp'] = 'pyswmm_viz/inp/Example1.inp'#default path for inp file
+    st.session_state['inp'] = 'inp/Example1.inp'#default path for inp file
     inp = SwmmInput.read_file(st.session_state['inp'])#default path for inp file
 
 # layout
@@ -640,7 +640,7 @@ def path_view(out,df):
     )   
     
     
-    # add trace for conduits
+    # add trace for conduits（bottom line and top line）
     for conduit in conduits.itertuples():
 
         fig.add_trace(go.Scatter(x = [conduit[10], conduit[13]],
@@ -668,6 +668,11 @@ def path_view(out,df):
             
         )
     )   
+    
+
+    
+    
+    
     # Set the x and y axes to have the same range
     x_min = junctions_coord['x'].min()
     x_max = junctions_coord['x'].max()
@@ -833,6 +838,11 @@ def path_view(out,df):
             width=500,
             height=400,)
         st.plotly_chart(fig)
+        
+        
+        #add water profile for conduits and junctions
+        #read the output file first
+        st.dataframe(st.session_state.out_df)
     ###
     st.write(edge_id_list)
     
