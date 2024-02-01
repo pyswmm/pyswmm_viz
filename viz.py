@@ -831,7 +831,7 @@ def path_view(out,df):
                             marker_line_color = 'blue',
                             marker_line_width=1.5)                                
                             )
-        
+         
         #set figure layout width and height                
         fig.update_layout(
             autosize=False,
