@@ -732,7 +732,12 @@ def path_view(out,df):
             else:
                 st.write('There is no path between', from_node, 'and', to_node)
                 path = []
-        st.write(path)
+                
+        #check if there is a path between from_node and to_node
+        if path:
+            st.write(path)
+        else:
+            st.write('No path found.')
         # 
         edge_id_list=[]
         for i in range(len(path) - 1):
@@ -751,6 +756,7 @@ def path_view(out,df):
         fig = go.Figure()
         start_x = 0
         start_node = from_node
+        count = 0
         for edge_id in edge_id_list:
             conduit = conduits.loc[edge_id]
             #st.dataframe(conduit)
@@ -801,10 +807,10 @@ def path_view(out,df):
                                     text = 'Conduit '+ conduit[8],
                                     showlegend=False,
                                     fill='tonexty',
-                                    fillcolor='rgba(131, 161, 182,0.3)',
+                                    fillcolor='rgba(131, 161, 182,0.0)',
                                     )
                             )
-            #plot the node as bar
+            #plot nodes as bar
             fig.add_trace(go.Bar(x = [start_x],
                                  y = [height*2],
                                  width = 40,
@@ -815,7 +821,18 @@ def path_view(out,df):
                                  marker_line_width=1.5)                                
                                  )
                             
+            fig.add_trace(go.Bar(x = [start_x],
+                                 #y= st.session_state.out_df['node'][path[count]]['depth'],
+                                 y=[10],
+                                width = 40,
+                                base = start_y,
+                                marker_color = 'rgba(131, 161, 182,0.9)',
+                                showlegend=False,
+                                marker_line_color = 'blue',
+                                marker_line_width=1.5)                                
+                                )
             
+            count = count + 1
             
 
             
@@ -841,10 +858,21 @@ def path_view(out,df):
         
         
         #add water profile for conduits and junctions
+        
+        #pipe list variable: edge_id_list
+        #node list variabel: path
         #read the output file first
         st.dataframe(st.session_state.out_df)
+        for node_id in path:
+            #read node depth in the st.session_state.out_df
+            st.dataframe(st.session_state.out_df['node'][node_id]['head'])
+            #plot the water depth profile as bars for each node
+            #fig.add_trace(go.Bar(x = [node_id],)
+
+                
+        
+        
     ###
-    st.write(edge_id_list)
     
     sub_out = out.get_part(edge_id_list)
     st.dataframe(sub_out)
