@@ -11,6 +11,7 @@ import streamlit.components.v1 as components
 #import pyvista as pv
 #from bim import bim_view
 import networkx as nx
+import random
 #from pyswmm import Simulation, Nodes, Links
 
 # Initialization of session state variables
@@ -830,7 +831,7 @@ def path_view(out,df):
                                 showlegend=False,
                                 marker_line_color = 'blue',
                                 marker_line_width=1.5)                                
-                                )
+                                ) 
             
             count = count + 1
             
@@ -879,28 +880,79 @@ def path_view(out,df):
     return None
 
 # path view page
-def water_flux(out):
+#create a sankey diagram for water flux 
+def water_flux(out, df):
     
-    try:
+    title = 'Water flux'
+    node_label_list = []
+    node_list = out.labels['node']
+    conduit_list = out.labels['link']
+    node_color_list = []
+    conduit_color_list = []
+    conduit_label_list = []
+    value_list = []
+    #
+    source_list = []
+    target_list = []
+    
+
+    conduits = st.session_state['conduits']
+
+    for conduit in conduits.itertuples():
+        source_list.append(conduit[1])
+        if conduit[1] not in node_label_list:
+            node_label_list.append(conduit[1])
+            #pick a random unique color for each node
+            node_color_list.append('rgba(31, 119, 180, 0.8)')
+        target_list.append(conduit[2])
+        value_list.append(sum(out.get_part('link',conduit[9],'flow')))
+        conduit_label_list.append(conduit[9])
+        conduit_color_list.append('lightblue')
+    
+    #st.write(node_label_list, target_list)
     #create a sankey diagram
-        HtmlFile = open("H:/swmm_plot_examples/lid_plot.html", 'r', encoding='utf-8')
-        source_code = HtmlFile.read() 
-        components.html(source_code,height = 800,width = 1200)
-    except:
-        pass
+    fig = go.Figure(data=[go.Sankey(
+        node = dict(
+            pad = 15,
+            thickness = 20,
+            line = dict(color = "black", width = 0.5),
+            label = node_label_list,
+        ),
+        link = dict(
+            source = source_list, # indices correspond to labels, eg A1, A2, A2, B1, ...
+            target = target_list,
+            value = value_list,
+            label = conduit_label_list,
+            color = conduit_color_list
+    ))])
+    fig.update_layout(title_text=title, font_size=10)
+    #change the figure layout width and height
+    fig.update_layout(
+        autosize=False,
+        width=800,
+        height=800,)
     
+    st.plotly_chart(fig)
+    
+    # try:
+    #     HtmlFile = open("H:/work/Downloads/swmm_dash/_continuity_sankey_plot.html", 'r', encoding='utf-8')
+    #     source_code = HtmlFile.read() 
+    #     components.html(source_code,height = 3000,width = 1200)      
+    # except:
+    #     pass
+
  
     return None
 
 # path view page
 def bim_view():
     
-    try:
-        HtmlFile = open("H:/work/Downloads/swmm_dash/_continuity_sankey_plot.html", 'r', encoding='utf-8')
-        source_code = HtmlFile.read() 
-        components.html(source_code,height = 1600,width = 1200)      
-    except:
-        pass
+    # try:
+    #     HtmlFile = open("H:/work/Downloads/swmm_dash/_continuity_sankey_plot.html", 'r', encoding='utf-8')
+    #     source_code = HtmlFile.read() 
+    #     components.html(source_code,height = 1600,width = 1200)      
+    # except:
+    #     pass
      
     return None
 
@@ -1009,7 +1061,7 @@ elif options == 'Water flux view':
         if st.session_state.out is None :
             st.write('Please run the model first.')
         else:
-            water_flux(st.session_state.out)
+            water_flux(st.session_state.out, st.session_state.out_df)
     except Exception as error:
         st.write('Failed to load the file.')
         st.write("An error occurred:", error)
